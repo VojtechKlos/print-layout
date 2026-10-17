@@ -16,7 +16,18 @@ rows × columns grid — or exports the same layout as a PDF.
 - File dialogs are the desktop's own (KDE's, GNOME's, …) through the XDG desktop portal.
   Set `QT_QPA_PLATFORMTHEME` yourself to override this.
 
-## Run
+## Download
+
+Get the AppImage or the Flatpak from the
+[latest release](https://github.com/VojtechKlos/print-layout/releases/latest):
+
+```sh
+chmod +x PrintLayout-*-x86_64.AppImage && ./PrintLayout-*-x86_64.AppImage
+# or
+flatpak install --user PrintLayout-*.flatpak
+```
+
+## Run from source
 
 ```sh
 uv run printlayout                  # empty project
@@ -72,3 +83,15 @@ uv run pytest
 | `output.py` | Print dialog and PDF export |
 | `project_io.py` | Saving and loading `*.plproj` files |
 | `ui/` | Main window, photo list, sheet preview, settings panel |
+
+## Releasing
+
+1. Bump `version` in `pyproject.toml` and add a `<release>` entry to
+   `data/io.github.VojtechKlos.PrintLayout.metainfo.xml`; commit.
+2. Run `./packaging/release.sh`. It runs the tests, builds the AppImage and the Flatpak, tags
+   `v<version>`, pushes, and creates the GitHub release with both files and their checksums.
+   Needs `gh` logged in (`gh auth login`).
+
+## License
+
+MIT — see [LICENSE](LICENSE).
