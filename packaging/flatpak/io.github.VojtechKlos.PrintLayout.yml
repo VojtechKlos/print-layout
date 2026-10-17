@@ -1,0 +1,62 @@
+# Flatpak manifest for PrintLayout. Build with packaging/flatpak/build.sh.
+id: io.github.VojtechKlos.PrintLayout
+runtime: org.kde.Platform
+runtime-version: '6.11'
+sdk: org.kde.Sdk
+# PySide6 built against the KDE runtime's Qt: native style, dialogs and icons on Plasma.
+base: io.qt.PySide.BaseApp
+base-version: '6.11'
+command: printlayout
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Qt talks to CUPS directly; it doesn't use the print portal.
+  - --socket=cups
+  # Photos can be anywhere in home. This also keeps drag and drop from the file manager
+  # and project-relative photo paths working as in the native app.
+  - --filesystem=home
+build-options:
+  env:
+    # Tell the BaseApp's cleanup script to drop what PrintLayout doesn't use (most of its size).
+    - BASEAPP_REMOVE_WEBENGINE=1
+    - BASEAPP_REMOVE_PYWEBENGINE=1
+    - BASEAPP_DISABLE_NUMPY=1
+cleanup-commands:
+  - /app/cleanup-BaseApp.sh
+  # Also drop BaseApp parts PrintLayout never uses (~200 MB): the binding generator with
+  # LLVM/Clang, PyOpenGL and build helpers, and PySide6's other modules, Qt build tools,
+  # FFmpeg and type stubs. Kept: QtCore, QtGui, QtWidgets, QtPrintSupport.
+  - rm -rf /app/lib/libLLVM* /app/lib/libclang*
+  - rm -rf /app/lib/python3*/site-packages/shiboken6_generator* /app/lib/python3*/site-packages/OpenGL
+    /app/lib/python3*/site-packages/pyopengl-* /app/lib/python3*/site-packages/distro*
+    /app/lib/python3*/site-packages/pyproject_hooks* /app/lib/python3*/site-packages/patchelf-*
+  - rm -rf /app/lib/python3*/site-packages/PySide6/Qt /app/lib/python3*/site-packages/PySide6/include
+    /app/lib/python3*/site-packages/PySide6/typesystems /app/lib/python3*/site-packages/PySide6/glue
+    /app/lib/python3*/site-packages/PySide6/scripts /app/lib/python3*/site-packages/PySide6/doc
+  - find /app/lib/python3*/site-packages/PySide6 -maxdepth 1 -type f \( -name '*.pyi' -o ! -name '*.*'
+    -o -name 'libpyside6qml*' -o \( -name 'Qt*' ! -name 'QtCore.*' ! -name 'QtGui.*' ! -name 'QtWidgets.*'
+    ! -name 'QtPrintSupport.*' \) \) -delete
+modules:
+  - name: printlayout
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/share/printlayout
+      - cp -r src/printlayout /app/share/printlayout/
+      - find /app/share/printlayout -name __pycache__ -prune -exec rm -rf {} +
+      - python3 -m compileall -q /app/share/printlayout
+      - install -Dm755 packaging/flatpak/printlayout.sh /app/bin/printlayout
+      - install -Dm644 -t /app/share/applications data/${FLATPAK_ID}.desktop
+      - install -Dm644 -t /app/share/icons/hicolor/scalable/apps data/${FLATPAK_ID}.svg
+      - install -Dm644 -t /app/share/metainfo data/${FLATPAK_ID}.metainfo.xml
+    sources:
+      - type: dir
+        path: ../..
+        skip:
+          - .git
+          - .venv
+          - build
+          - dist
+          - .pytest_cache
+          - .ruff_cache
