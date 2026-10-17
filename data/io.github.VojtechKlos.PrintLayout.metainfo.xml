@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.VojtechKlos.PrintLayout</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <name>PrintLayout</name>
+  <summary>Print photos several to a page or save them as PDF</summary>
+  <developer id="io.github.vojtechklos">
+    <name>Vojtech Klos</name>
+  </developer>
+  <description>
+    <p>
+      PrintLayout places photos on a sheet in a grid — one full page, 2 × 2, 3 × 3 or any
+      number of rows and columns — and prints the result or saves it as a PDF.
+    </p>
+    <ul>
+      <li>Automatic arrangement in list order, or manual placement by drag and drop</li>
+      <li>A4, A3, A5 and 10 × 15 / 13 × 18 photo paper, portrait or landscape</li>
+      <li>Adjustable margins and gaps, fit or crop, automatic rotation and cut lines</li>
+      <li>Projects can be saved and opened again later</li>
+    </ul>
+  </description>
+  <url type="homepage">https://github.com/VojtechKlos/PrintLayout</url>
+  <launchable type="desktop-id">io.github.VojtechKlos.PrintLayout.desktop</launchable>
+  <provides>
+    <binary>printlayout</binary>
+  </provides>
+  <categories>
+    <category>Graphics</category>
+    <category>Photography</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-10-17"/>
+  </releases>
+</component>

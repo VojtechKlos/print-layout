@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=PrintLayout
+GenericName=Photo Layout Printing
+Comment=Print photos several to a page (full page, 2×2, 3×3…) or save them as PDF
+Exec=printlayout %F
+Icon=io.github.VojtechKlos.PrintLayout
+Terminal=false
+Categories=Graphics;Photography;Qt;
+MimeType=image/jpeg;image/png;image/webp;image/tiff;image/bmp;
+Keywords=print;photo;layout;grid;pdf;
