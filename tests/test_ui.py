@@ -164,3 +164,30 @@ def test_photo_list_marks_whole_sheet_photos(qtbot, doc):
     doc.set_photo_fill_sheet([doc.project.photos[0].id], True)
     assert widget.item(0).text().endswith("Sheet 1 · whole sheet")
     assert "whole sheet" not in widget.item(1).text()
+
+
+def test_settings_format_list(qtbot, doc):
+    panel = SettingsPanel(doc)
+    qtbot.addWidget(panel)
+    doc.set_gap(0)
+    index = panel._format.findData("poker")
+    panel._format.setCurrentIndex(index)
+    panel._format.activated.emit(index)
+    assert doc.project.grid.format == "poker"
+    assert not panel._rows.isEnabled() and (panel._rows.value(), panel._cols.value()) == (3, 3)
+    assert panel._info.text().startswith("9 per sheet")
+    # Headings can't be chosen.
+    heading = panel._format.findText("Playing cards")
+    assert not panel._format.model().item(heading).isEnabled()
+
+    panel._format.setCurrentIndex(0)
+    panel._format.activated.emit(0)
+    assert doc.project.grid.format == ""
+    assert panel._rows.isEnabled() and (panel._rows.value(), panel._cols.value()) == (2, 2)
+
+
+def test_settings_warns_when_format_does_not_fit(qtbot, doc):
+    panel = SettingsPanel(doc)
+    qtbot.addWidget(panel)
+    doc.set_format("20x25")
+    assert "doesn't fit" in panel._info.text()

@@ -59,12 +59,24 @@ def test_missing_photo_keeps_absolute_path(tmp_path, project):
     assert project_io.load(str(path)).photos[1].path == project.photos[1].path
 
 
-def test_unknown_ids_and_wrong_sheet_lengths_are_repaired(tmp_path, project):
+def test_unknown_photo_ids_become_empty_cells(tmp_path, project):
     path = tmp_path / "test.plproj"
     data = project_io.to_dict(project, str(path))
     data["sheets"] = [["zzz", "a", "b"], ["b"]]
     path.write_text(json.dumps(data))
-    assert project_io.load(str(path)).sheets == [[None, "a"], ["b", None]]
+    # Lengths are left as saved; the Document fits them to the layout (see test_document).
+    assert project_io.load(str(path)).sheets == [[None, "a", "b"], ["b"]]
+
+
+def test_format_round_trip_and_unknown_format(tmp_path, project):
+    path = tmp_path / "test.plproj"
+    project.grid.format = "poker"
+    project_io.save(project, str(path))
+    assert project_io.load(str(path)).grid.format == "poker"
+    data = json.loads(path.read_text())
+    data["grid"]["format"] = "no-such-format"
+    path.write_text(json.dumps(data))
+    assert project_io.load(str(path)).grid.format == ""
 
 
 def test_rejects_other_json(tmp_path):

@@ -38,10 +38,9 @@ class PageSettings:
 class GridLayout:
     rows: int = 2
     cols: int = 2
-
-    @property
-    def cells_per_sheet(self) -> int:
-        return self.rows * self.cols
+    # Key into formats.FORMATS; "" fills the page. Exact-size formats ignore rows and cols,
+    # so the number of cells per sheet comes from layout.project_layout(), not from here.
+    format: str = ""
 
 
 @dataclass

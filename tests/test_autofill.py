@@ -38,3 +38,7 @@ def test_fill_sheet_order_follows_the_list():
 
 def test_every_photo_filling_a_sheet():
     assert autofill(["a", "b"], 2, {"a", "b"}) == [["a", "a"], ["b", "b"]]
+
+
+def test_no_cells_gives_one_empty_sheet():
+    assert autofill(["a", "b"], 0) == [[]]

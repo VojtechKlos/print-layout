@@ -7,6 +7,7 @@ import os
 import tempfile
 from typing import Any
 
+from .formats import FORMATS
 from .model import (
     FitMode,
     GridLayout,
@@ -39,7 +40,7 @@ def to_dict(project: Project, project_path: str) -> dict[str, Any]:
             "margin_mm": project.page.margin_mm,
             "gap_mm": project.page.gap_mm,
         },
-        "grid": {"rows": project.grid.rows, "cols": project.grid.cols},
+        "grid": {"rows": project.grid.rows, "cols": project.grid.cols, "format": project.grid.format},
         "mode": project.mode.value,
         "fit_default": project.fit_default.value,
         "auto_rotate": project.auto_rotate,
@@ -75,7 +76,12 @@ def from_dict(data: dict[str, Any], project_path: str) -> Project:
             margin_mm=float(page_data["margin_mm"]),
             gap_mm=float(page_data["gap_mm"]),
         )
-        grid = GridLayout(rows=max(1, int(data["grid"]["rows"])), cols=max(1, int(data["grid"]["cols"])))
+        grid_data = data["grid"]
+        grid = GridLayout(
+            rows=max(1, int(grid_data["rows"])),
+            cols=max(1, int(grid_data["cols"])),
+            format=grid_data.get("format", "") if grid_data.get("format", "") in FORMATS else "",
+        )
         photos = [
             Photo(
                 path=_resolve_path(item.get("relative_path"), item["path"], base),
@@ -86,12 +92,9 @@ def from_dict(data: dict[str, Any], project_path: str) -> Project:
             )
             for item in data["photos"]
         ]
+        # Sheet lengths are fitted to the layout by the Document (it re-flows, losing nothing).
         known = {p.id for p in photos}
-        n = grid.cells_per_sheet
-        sheets: list[Sheet] = []
-        for raw in data.get("sheets", []):
-            sheet: Sheet = [pid if pid in known else None for pid in raw][:n]
-            sheets.append(sheet + [None] * (n - len(sheet)))
+        sheets: list[Sheet] = [[pid if pid in known else None for pid in raw] for raw in data.get("sheets", [])]
         return Project(
             page=page,
             grid=grid,

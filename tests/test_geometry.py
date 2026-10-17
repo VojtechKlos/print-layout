@@ -1,5 +1,6 @@
 import pytest
 
+from printlayout.formats import FORMATS
 from printlayout.geometry import (
     Rect,
     cell_rects,
@@ -7,6 +8,7 @@ from printlayout.geometry import (
     effective_rotation,
     placement,
     rotated_size,
+    sheet_layout,
 )
 from printlayout.model import FitMode, Orientation, PageSettings
 from printlayout.paper import page_size_mm
@@ -114,3 +116,47 @@ def test_cut_segments_without_gap_share_edges():
 def test_cut_segments_none_when_borderless():
     cells = cell_rects(210, 297, margin=0, gap=0, rows=2, cols=2)
     assert cut_segments(cells, 210, 297) == []
+
+
+def test_poker_cards_on_a4_without_gap_fit_three_by_three():
+    layout = sheet_layout(210, 297, margin=5, gap=0, rows=2, cols=2, fmt=FORMATS["poker"])
+    assert (layout.rows, layout.cols, layout.count, layout.rotated) == (3, 3, 9, False)
+    first, last = layout.cells[0], layout.cells[-1]
+    approx_rect(first, (210 - 190.5) / 2, (297 - 266.7) / 2, 63.5, 88.9)
+    # The block is centred: equal space left/right and top/bottom.
+    assert first.x == pytest.approx(210 - last.right)
+    assert first.y == pytest.approx(297 - last.bottom)
+
+
+def test_exact_format_turns_sideways_when_more_fit():
+    # With a 5 mm gap only 2 × 3 upright cards fit, but 2 × 4 sideways.
+    layout = sheet_layout(210, 297, margin=5, gap=5, rows=1, cols=1, fmt=FORMATS["poker"])
+    assert (layout.rows, layout.cols, layout.rotated) == (4, 2, True)
+    assert (layout.cells[0].w, layout.cells[0].h) == (88.9, 63.5)
+
+
+def test_exact_format_too_big_has_no_cells():
+    layout = sheet_layout(101.6, 152.4, margin=5, gap=5, rows=2, cols=2, fmt=FORMATS["20x25"])
+    assert layout.count == 0
+
+
+def test_aspect_format_shapes_grid_cells():
+    layout = sheet_layout(210, 297, margin=10, gap=5, rows=2, cols=2, fmt=FORMATS["4:3"])
+    cell = layout.cells[0]
+    # Each 92.5 × 136 grid box holds the largest 3:4 (upright) rectangle.
+    assert (cell.w, cell.h) == pytest.approx((92.5, 92.5 * 4 / 3))
+    assert all(c.w == cell.w and c.h == cell.h for c in layout.cells)
+    assert layout.cells[1].x - cell.right == pytest.approx(5)  # gap kept between cells
+
+
+def test_fill_page_layout_fills_area_inside_margins():
+    cells = sheet_layout(210, 297, margin=10, gap=5, rows=3, cols=2).cells
+    assert (cells[0].x, cells[0].y) == pytest.approx((10, 10))
+    assert (cells[-1].right, cells[-1].bottom) == pytest.approx((200, 287))
+
+
+def test_cut_segments_for_centred_card_block_stay_outside_cards():
+    layout = sheet_layout(210, 297, margin=5, gap=0, rows=1, cols=1, fmt=FORMATS["poker"])
+    for x0, y0, x1, y1 in cut_segments(layout.cells, 210, 297):
+        mid_x, mid_y = (x0 + x1) / 2, (y0 + y1) / 2
+        assert not any(c.x < mid_x < c.right and c.y < mid_y < c.bottom for c in layout.cells)

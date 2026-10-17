@@ -14,6 +14,8 @@ def autofill(photo_ids: list[str], cells_per_sheet: int, fill_sheet: Collection[
     photos keep flowing around them, so no cells are left empty in between.
     """
     n = cells_per_sheet
+    if n <= 0:  # the cell format doesn't fit on the paper
+        return [[]]
     sheets: list[Sheet] = []
     current: Sheet = []
     used = n  # cells taken on `current`; n means the next photo starts a new sheet

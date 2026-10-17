@@ -8,6 +8,7 @@ from PySide6.QtCore import QObject, Signal
 
 from . import project_io
 from .autofill import autofill, reflow
+from .layout import project_layout
 from .model import FitMode, LayoutMode, Orientation, Photo, Project, Sheet
 
 
@@ -130,9 +131,11 @@ class Document(QObject):
         if (grid.rows, grid.cols) == (rows, cols):
             return
         grid.rows, grid.cols = rows, cols
-        if self.project.mode is LayoutMode.MANUAL:
-            self.project.sheets = reflow(self.project.sheets, grid.cells_per_sheet)
         self._touch()
+
+    def set_format(self, key: str) -> None:
+        """Cell format: "" fills the page, otherwise a key of formats.FORMATS."""
+        self._set(self.project.grid, "format", key)
 
     def set_mode(self, mode: LayoutMode) -> None:
         # Switching to manual keeps the current arrangement as the starting point;
@@ -196,7 +199,7 @@ class Document(QObject):
 
     def add_sheet(self) -> int:
         self._ensure_manual()
-        self.project.sheets.append([None] * self.project.grid.cells_per_sheet)
+        self.project.sheets.append([None] * self.cells_per_sheet())
         self._touch()
         return len(self.project.sheets) - 1
 
@@ -204,7 +207,7 @@ class Document(QObject):
         if len(self.project.sheets) > 1:
             del self.project.sheets[sheet_index]
         else:
-            self.project.sheets = [[None] * self.project.grid.cells_per_sheet]
+            self.project.sheets = [[None] * self.cells_per_sheet()]
         self._touch()
 
     def _ensure_manual(self) -> None:
@@ -214,15 +217,25 @@ class Document(QObject):
 
     # --- bookkeeping --------------------------------------------------------------------
 
+    def cells_per_sheet(self) -> int:
+        return project_layout(self.project).count
+
     def _auto_sheets(self) -> list[Sheet]:
         project = self.project
         ids = [p.id for p in project.photos]
         fill = {p.id for p in project.photos if project.fills_sheet(p)}
-        return autofill(ids, project.grid.cells_per_sheet, fill)
+        return autofill(ids, self.cells_per_sheet(), fill)
 
     def _relayout(self) -> None:
         if self.project.mode is LayoutMode.AUTO or not self.project.sheets:
             self.project.sheets = self._auto_sheets()
+            return
+        n = self.cells_per_sheet()
+        # The grid, format, paper or spacing changed how many cells a sheet has: keep each
+        # manual sheet's photos in order. With no cells at all (a format that doesn't fit),
+        # leave the sheets alone so nothing is lost while the settings are being changed.
+        if n and any(len(sheet) != n for sheet in self.project.sheets):
+            self.project.sheets = reflow(self.project.sheets, n)
 
     def _touch(self, photos_changed: bool = False) -> None:
         self._relayout()

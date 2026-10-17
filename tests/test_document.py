@@ -166,3 +166,55 @@ def test_duplicate_keeps_fill_sheet(doc):
     doc.set_photo_fill_sheet([first], True)
     doc.duplicate_photos([first])
     assert doc.project.photos[1].fill_sheet
+
+
+def test_loading_manual_sheets_of_wrong_length_keeps_every_photo(qapp, tmp_path):
+    source = Document()
+    source.add_photos(["/photos/a.jpg", "/photos/b.jpg"])
+    source.set_mode(LayoutMode.MANUAL)
+    a, b = ids(source)
+    source.project.sheets = [[None, a, b], [b]]  # e.g. edited by hand
+    path = str(tmp_path / "x.plproj")
+    source.save(path)
+    loaded = Document()
+    loaded.load(path)
+    assert loaded.project.sheets == [[a, b, None, None], [b, None, None, None]]
+
+
+def test_exact_format_sets_cells_per_sheet(doc):
+    doc.set_margin(5)
+    doc.set_gap(0)
+    doc.set_format("poker")  # A4: 3 × 3 cards
+    assert doc.cells_per_sheet() == 9
+    assert [len(s) for s in doc.project.sheets] == [9]
+    doc.set_format("")
+    assert doc.cells_per_sheet() == 4
+
+
+def test_format_change_reflows_manual_sheets(doc):
+    doc.set_mode(LayoutMode.MANUAL)
+    doc.set_gap(0)
+    doc.set_format("passport")
+    n = doc.cells_per_sheet()
+    assert n > 4
+    assert all(len(s) == n for s in doc.project.sheets)
+    assert sorted(p for s in doc.project.sheets for p in s if p) == sorted(ids(doc))
+
+
+def test_format_too_big_for_the_paper(doc):
+    doc.set_paper("10x15")
+    doc.set_format("20x25")
+    assert doc.cells_per_sheet() == 0
+    assert doc.project.sheets == [[]]
+    doc.set_paper("A3")  # fits again
+    assert doc.cells_per_sheet() >= 1
+    assert sorted(p for s in doc.project.sheets for p in s if p) == sorted(ids(doc))
+
+
+def test_too_big_format_keeps_manual_placements(doc):
+    doc.set_mode(LayoutMode.MANUAL)
+    before = [list(s) for s in doc.project.sheets]
+    doc.set_format("20x25")  # nothing fits on A4 with the default margins
+    assert doc.project.sheets == before
+    doc.set_format("")
+    assert doc.project.sheets == before

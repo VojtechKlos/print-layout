@@ -9,12 +9,12 @@ from PySide6.QtGui import QColor, QImage, QPainter, QPen, QTransform
 
 from .geometry import (
     Rect,
-    cell_rects,
     cut_segments,
     effective_rotation,
     placement,
     rotated_size,
 )
+from .layout import project_layout
 from .model import Photo, Project, Sheet
 from .paper import page_size_mm
 
@@ -27,15 +27,7 @@ ImageGetter = Callable[[str], QImage | None]
 
 
 def sheet_cells(project: Project) -> list[Rect]:
-    page_w, page_h = page_size_mm(project.page)
-    return cell_rects(
-        page_w,
-        page_h,
-        project.page.margin_mm,
-        project.page.gap_mm,
-        project.grid.rows,
-        project.grid.cols,
-    )
+    return project_layout(project).cells
 
 
 def render_sheet(

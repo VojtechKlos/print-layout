@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .formats import CellFormat
 from .model import FitMode
 
 _EPS = 1e-6
@@ -31,17 +32,84 @@ class Rect:
         return self.x <= px < self.right and self.y <= py < self.bottom
 
 
+@dataclass(frozen=True)
+class SheetLayout:
+    rows: int
+    cols: int
+    cells: list[Rect]  # row-major
+    rotated: bool = False  # exact-size cells turned sideways because more fit that way
+
+    @property
+    def count(self) -> int:
+        return len(self.cells)
+
+
+def sheet_layout(
+    page_w: float,
+    page_h: float,
+    margin: float,
+    gap: float,
+    rows: int,
+    cols: int,
+    fmt: CellFormat | None = None,
+) -> SheetLayout:
+    """Cells of a sheet, centred on the page.
+
+    Without a format the rows × columns grid fills the area inside the margins. An aspect-ratio
+    format shapes each grid cell to that ratio. An exact-size format ignores rows and columns
+    and fits as many cells of that size as possible, turned sideways if more fit that way.
+    """
+    usable_w, usable_h = page_w - 2 * margin, page_h - 2 * margin
+    if fmt is not None and fmt.exact:
+        rows, cols, cell_w, cell_h = fit_exact(usable_w, usable_h, gap, fmt.width, fmt.height)
+        rotated = abs(cell_w - fmt.width) > _EPS
+        return SheetLayout(rows, cols, grid_block(page_w, page_h, rows, cols, cell_w, cell_h, gap), rotated)
+    cell_w = max(0.0, (usable_w - (cols - 1) * gap) / cols)
+    cell_h = max(0.0, (usable_h - (rows - 1) * gap) / rows)
+    if fmt is not None:
+        cell_w, cell_h = fit_ratio(cell_w, cell_h, fmt.width, fmt.height)
+    return SheetLayout(rows, cols, grid_block(page_w, page_h, rows, cols, cell_w, cell_h, gap))
+
+
 def cell_rects(
     page_w: float, page_h: float, margin: float, gap: float, rows: int, cols: int
 ) -> list[Rect]:
-    """Cells of a uniform grid in row-major order. Sizes clamp to 0 if margins/gaps don't fit."""
-    cell_w = max(0.0, (page_w - 2 * margin - (cols - 1) * gap) / cols)
-    cell_h = max(0.0, (page_h - 2 * margin - (rows - 1) * gap) / rows)
+    """Cells of a grid filling the area inside the margins. Sizes clamp to 0 if they don't fit."""
+    return sheet_layout(page_w, page_h, margin, gap, rows, cols).cells
+
+
+def grid_block(
+    page_w: float, page_h: float, rows: int, cols: int, cell_w: float, cell_h: float, gap: float
+) -> list[Rect]:
+    """A rows × columns block of equal cells, centred on the page."""
+    x0 = (page_w - cols * cell_w - (cols - 1) * gap) / 2
+    y0 = (page_h - rows * cell_h - (rows - 1) * gap) / 2
     return [
-        Rect(margin + c * (cell_w + gap), margin + r * (cell_h + gap), cell_w, cell_h)
+        Rect(x0 + c * (cell_w + gap), y0 + r * (cell_h + gap), cell_w, cell_h)
         for r in range(rows)
         for c in range(cols)
     ]
+
+
+def fit_ratio(box_w: float, box_h: float, ratio_w: float, ratio_h: float) -> tuple[float, float]:
+    """Largest rectangle of the given aspect ratio, either way round, that fits in the box."""
+    best = (0.0, 0.0)
+    for w, h in ((ratio_w, ratio_h), (ratio_h, ratio_w)):
+        scale = min(box_w / w, box_h / h)
+        if (scale * w) * (scale * h) > best[0] * best[1] + _EPS:
+            best = (scale * w, scale * h)
+    return best
+
+
+def fit_exact(usable_w: float, usable_h: float, gap: float, w: float, h: float) -> tuple[int, int, float, float]:
+    """Most w × h cells that fit, either way round (ties keep w × h). Returns rows, cols, w, h."""
+    best = (0, 0, w, h)
+    for cell_w, cell_h in ((w, h), (h, w)):
+        cols = max(0, int((usable_w + gap + _EPS) // (cell_w + gap)))
+        rows = max(0, int((usable_h + gap + _EPS) // (cell_h + gap)))
+        if rows * cols > best[0] * best[1]:
+            best = (rows, cols, cell_w, cell_h)
+    return best
 
 
 def rotated_size(w: float, h: float, rotation: int) -> tuple[float, float]:

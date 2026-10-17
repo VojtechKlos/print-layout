@@ -11,6 +11,10 @@ rows × columns grid — or exports the same layout as a PDF.
   drag between cells to swap, right-click a cell to rotate, clear, or fill the empty cells
   with the same photo.
 - Paper: A4, A3, A5, photo 10 × 15 cm (4 × 6″) and 13 × 18 cm (5 × 7″), portrait or landscape.
+- Cell formats: fill the page; keep an aspect ratio (1:1, 5:4, 4:3, 3:2, 16:9); or exact sizes —
+  photo prints (passport 35 × 45 mm, 9 × 13, 10 × 15, 13 × 18 cm, …) and playing cards (poker,
+  bridge, Magic/Pokémon, Yu-Gi-Oh!, tarot, mini). Exact sizes fit as many as the paper holds,
+  centred, turned sideways when more fit that way. For 9 cards per A4 use a 0 mm gap.
 - Margins and gaps in mm, Fit (whole photo) or Fill (crop to cell) per project or per photo,
   auto-rotation to match the cell, and optional cut lines in the margins and gaps.
 - Projects are saved as `*.plproj` (JSON). Photo paths are stored relative to the project
