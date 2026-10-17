@@ -3,6 +3,8 @@ name = "printlayout"
 version = "0.1.0"
 description = "Print photos in grid layouts (1, 2×2, 3×3, …) or export them as PDF"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "Vojtech Klos", email = "vojta.klos@gmail.com" }
 ]
@@ -10,6 +12,10 @@ requires-python = ">=3.12"
 dependencies = [
     "pyside6-essentials>=6.12.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/VojtechKlos/print-layout"
+Issues = "https://github.com/VojtechKlos/print-layout/issues"
 
 [project.scripts]
 printlayout = "printlayout.app:main"

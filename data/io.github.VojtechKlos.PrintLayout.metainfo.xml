@@ -2,6 +2,7 @@
 <component type="desktop-application">
   <id>io.github.VojtechKlos.PrintLayout</id>
   <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
   <name>PrintLayout</name>
   <summary>Print photos several to a page or save them as PDF</summary>
   <developer id="io.github.vojtechklos">
@@ -19,7 +20,8 @@
       <li>Projects can be saved and opened again later</li>
     </ul>
   </description>
-  <url type="homepage">https://github.com/VojtechKlos/PrintLayout</url>
+  <url type="homepage">https://github.com/VojtechKlos/print-layout</url>
+  <url type="bugtracker">https://github.com/VojtechKlos/print-layout/issues</url>
   <launchable type="desktop-id">io.github.VojtechKlos.PrintLayout.desktop</launchable>
   <provides>
     <binary>printlayout</binary>
