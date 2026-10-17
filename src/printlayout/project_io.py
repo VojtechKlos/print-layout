@@ -44,6 +44,7 @@ def to_dict(project: Project, project_path: str) -> dict[str, Any]:
         "fit_default": project.fit_default.value,
         "auto_rotate": project.auto_rotate,
         "cut_lines": project.cut_lines,
+        "fill_sheets": project.fill_sheets,
         "photos": [
             {
                 "id": photo.id,
@@ -51,6 +52,7 @@ def to_dict(project: Project, project_path: str) -> dict[str, Any]:
                 "relative_path": os.path.relpath(os.path.abspath(photo.path), base),
                 "rotation": photo.rotation,
                 "fit": photo.fit.value if photo.fit else None,
+                "fill_sheet": photo.fill_sheet,
             }
             for photo in project.photos
         ],
@@ -80,6 +82,7 @@ def from_dict(data: dict[str, Any], project_path: str) -> Project:
                 id=str(item["id"]),
                 rotation=int(item.get("rotation", 0)) % 360 // 90 * 90,
                 fit=FitMode(item["fit"]) if item.get("fit") else None,
+                fill_sheet=bool(item.get("fill_sheet", False)),
             )
             for item in data["photos"]
         ]
@@ -96,6 +99,7 @@ def from_dict(data: dict[str, Any], project_path: str) -> Project:
             fit_default=FitMode(data["fit_default"]),
             auto_rotate=bool(data["auto_rotate"]),
             cut_lines=bool(data["cut_lines"]),
+            fill_sheets=bool(data.get("fill_sheets", False)),
             photos=photos,
             sheets=sheets,
         )

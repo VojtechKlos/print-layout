@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 from ..document import Document
 from ..imagecache import collect_image_paths, load_image
 from ..model import LayoutMode, Photo
-from .sheet_view import PHOTO_MIME, add_fit_menu, add_menu_action
+from .sheet_view import PHOTO_MIME, add_fill_sheet_action, add_fit_menu, add_menu_action
 
 ID_ROLE = Qt.ItemDataRole.UserRole
 ICON_SIZE = 96
@@ -77,11 +77,15 @@ class PhotoList(QListWidget):
             item.setText(f"{os.path.basename(photo.path)}\n{self._usage(photo)}")
 
     def _usage(self, photo: Photo) -> str:
-        sheets = self._doc.project.sheets_with(photo.id)
+        project = self._doc.project
+        sheets = project.sheets_with(photo.id)
         if not sheets:
             return self.tr("Not placed")
         numbers = ", ".join(str(i + 1) for i in sheets)
-        return self.tr("Sheet {0}").format(numbers) if len(sheets) == 1 else self.tr("Sheets {0}").format(numbers)
+        text = self.tr("Sheet {0}").format(numbers) if len(sheets) == 1 else self.tr("Sheets {0}").format(numbers)
+        if project.mode is LayoutMode.AUTO and project.fills_sheet(photo):
+            text += self.tr(" · whole sheet")
+        return text
 
     def _icon(self, photo: Photo) -> QIcon:
         key = (photo.path, photo.rotation)
@@ -154,6 +158,8 @@ class PhotoList(QListWidget):
         first = doc.project.photo(ids[0])
         add_fit_menu(menu, doc, ids, first.fit if first and len(ids) == 1 else None)
         menu.addSeparator()
+        if doc.project.mode is LayoutMode.AUTO:
+            add_fill_sheet_action(menu, doc, ids)
         add_menu_action(menu, self.tr("Add a copy"), lambda: doc.duplicate_photos(ids), "edit-copy")
         if doc.project.mode is LayoutMode.MANUAL and len(ids) == 1:
             add_menu_action(menu, self.tr("Show on sheet"), lambda: self.photo_activated.emit(ids[0]))

@@ -50,6 +50,7 @@ class Photo:
     id: str = field(default_factory=new_id)
     rotation: int = 0  # clockwise degrees chosen by the user: 0, 90, 180 or 270
     fit: FitMode | None = None  # None = use the project default
+    fill_sheet: bool = False  # automatic mode: own sheet with the photo in every cell
 
 
 # Photo ids in row-major cell order; None marks an empty cell.
@@ -64,6 +65,7 @@ class Project:
     fit_default: FitMode = FitMode.FILL
     auto_rotate: bool = True
     cut_lines: bool = False
+    fill_sheets: bool = False  # automatic mode: every photo fills a sheet of its own
     photos: list[Photo] = field(default_factory=list)
     sheets: list[Sheet] = field(default_factory=list)
 
@@ -74,6 +76,9 @@ class Project:
 
     def fit_for(self, photo: Photo) -> FitMode:
         return photo.fit or self.fit_default
+
+    def fills_sheet(self, photo: Photo) -> bool:
+        return self.fill_sheets or photo.fill_sheet
 
     def sheets_with(self, photo_id: str) -> list[int]:
         return [i for i, sheet in enumerate(self.sheets) if photo_id in sheet]

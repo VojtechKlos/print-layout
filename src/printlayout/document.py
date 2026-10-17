@@ -8,7 +8,7 @@ from PySide6.QtCore import QObject, Signal
 
 from . import project_io
 from .autofill import autofill, reflow
-from .model import FitMode, LayoutMode, Orientation, Photo, Project
+from .model import FitMode, LayoutMode, Orientation, Photo, Project, Sheet
 
 
 class Document(QObject):
@@ -61,7 +61,7 @@ class Document(QObject):
         if not originals:
             return
         last = max(self.project.photos.index(p) for p in originals)
-        copies = [Photo(path=p.path, rotation=p.rotation, fit=p.fit) for p in originals]
+        copies = [Photo(path=p.path, rotation=p.rotation, fit=p.fit, fill_sheet=p.fill_sheet) for p in originals]
         self.project.photos[last + 1 : last + 1] = copies
         self._touch(photos_changed=True)
 
@@ -86,6 +86,12 @@ class Document(QObject):
     def set_photo_fit(self, photo_ids: list[str], fit: FitMode | None) -> None:
         for photo in self._photos(photo_ids):
             photo.fit = fit
+        self._touch()
+
+    def set_photo_fill_sheet(self, photo_ids: list[str], enabled: bool) -> None:
+        """Automatic mode: give these photos a sheet of their own with every cell filled."""
+        for photo in self._photos(photo_ids):
+            photo.fill_sheet = enabled
         self._touch()
 
     def _photos(self, photo_ids: list[str]) -> list[Photo]:
@@ -115,6 +121,10 @@ class Document(QObject):
     def set_cut_lines(self, enabled: bool) -> None:
         self._set(self.project, "cut_lines", enabled)
 
+    def set_fill_sheets(self, enabled: bool) -> None:
+        """Automatic mode: every photo fills a sheet of its own."""
+        self._set(self.project, "fill_sheets", enabled)
+
     def set_grid(self, rows: int, cols: int) -> None:
         grid = self.project.grid
         if (grid.rows, grid.cols) == (rows, cols):
@@ -131,8 +141,7 @@ class Document(QObject):
 
     def auto_layout_differs(self) -> bool:
         """True if switching to auto mode would change the current arrangement."""
-        ids = [p.id for p in self.project.photos]
-        return autofill(ids, self.project.grid.cells_per_sheet) != self.project.sheets
+        return self._auto_sheets() != self.project.sheets
 
     def _set(self, target: object, name: str, value: object) -> None:
         if getattr(target, name) != value:
@@ -166,20 +175,22 @@ class Document(QObject):
         """Drag one cell onto another: the two contents swap places."""
         if from_cell == to_cell:
             return
+        sheet = self.project.sheets[sheet_index]
         if self.project.mode is LayoutMode.AUTO:
-            # In auto mode the arrangement follows the photo list, so reorder the list.
-            n = self.project.grid.cells_per_sheet
-            ids = [p.id for p in self.project.photos]
-            a, b = sheet_index * n + from_cell, sheet_index * n + to_cell
-            if a >= len(ids):
+            # In auto mode the arrangement follows the photo list, so reorder the list:
+            # swap the two photos, or move the photo to the end when dropped on an empty cell.
+            moved, target = sheet[from_cell], sheet[to_cell]
+            if moved is None or moved == target:
                 return
-            if b < len(ids):
-                ids[a], ids[b] = ids[b], ids[a]
+            ids = [p.id for p in self.project.photos]
+            i = ids.index(moved)
+            if target is None:
+                ids.append(ids.pop(i))
             else:
-                ids.append(ids.pop(a))
+                j = ids.index(target)
+                ids[i], ids[j] = ids[j], ids[i]
             self.reorder_photos(ids)
             return
-        sheet = self.project.sheets[sheet_index]
         sheet[from_cell], sheet[to_cell] = sheet[to_cell], sheet[from_cell]
         self._touch()
 
@@ -203,10 +214,15 @@ class Document(QObject):
 
     # --- bookkeeping --------------------------------------------------------------------
 
+    def _auto_sheets(self) -> list[Sheet]:
+        project = self.project
+        ids = [p.id for p in project.photos]
+        fill = {p.id for p in project.photos if project.fills_sheet(p)}
+        return autofill(ids, project.grid.cells_per_sheet, fill)
+
     def _relayout(self) -> None:
         if self.project.mode is LayoutMode.AUTO or not self.project.sheets:
-            ids = [p.id for p in self.project.photos]
-            self.project.sheets = autofill(ids, self.project.grid.cells_per_sheet)
+            self.project.sheets = self._auto_sheets()
 
     def _touch(self, photos_changed: bool = False) -> None:
         self._relayout()

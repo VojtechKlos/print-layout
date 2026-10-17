@@ -26,3 +26,15 @@ def test_reflow_keeps_sheets_and_moves_overflow_after_them():
 
 def test_reflow_to_bigger_grid_compacts():
     assert reflow([[None, "a", None, "b"]], 9) == [["a", "b"] + [None] * 7]
+
+
+def test_fill_sheet_photo_gets_own_sheet_and_others_keep_flowing():
+    assert autofill(["a", "b", "c", "d"], 4, {"b"}) == [["a", "c", "d", None], ["b", "b", "b", "b"]]
+
+
+def test_fill_sheet_order_follows_the_list():
+    assert autofill(["b", "a"], 4, {"b"}) == [["b"] * 4, ["a", None, None, None]]
+
+
+def test_every_photo_filling_a_sheet():
+    assert autofill(["a", "b"], 2, {"a", "b"}) == [["a", "a"], ["b", "b"]]

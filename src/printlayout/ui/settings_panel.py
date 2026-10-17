@@ -83,6 +83,10 @@ class SettingsPanel(QWidget):
         self._mode_group = QButtonGroup(self)
         self._mode_group.addButton(self._auto)
         self._mode_group.addButton(self._manual)
+        self._fill_sheets = QCheckBox(self.tr("Each photo fills a whole sheet"))
+        self._fill_sheets.setToolTip(
+            self.tr("Every photo gets its own sheet with the photo in every cell (automatic arrangement)")
+        )
         self._mode_hint = QLabel()
         self._mode_hint.setWordWrap(True)
         self._mode_hint.setEnabled(False)  # greyed-out help text
@@ -93,6 +97,7 @@ class SettingsPanel(QWidget):
         mode_box = QGroupBox(self.tr("Arrangement"))
         mode_layout = QVBoxLayout(mode_box)
         mode_layout.addLayout(mode_row)
+        mode_layout.addWidget(self._fill_sheets)
         mode_layout.addWidget(self._mode_hint)
 
         # Paper
@@ -151,6 +156,7 @@ class SettingsPanel(QWidget):
         layout.addStretch()
 
         self._mode_group.buttonClicked.connect(self._on_mode_clicked)
+        self._fill_sheets.toggled.connect(document.set_fill_sheets)
         self._paper.currentIndexChanged.connect(lambda: document.set_paper(self._paper.currentData()))
         self._orientation.currentIndexChanged.connect(
             lambda: document.set_orientation(Orientation(self._orientation.currentData()))
@@ -171,13 +177,16 @@ class SettingsPanel(QWidget):
         project = self._doc.project
         page, grid = project.page, project.grid
         widgets = (
-            self._auto, self._manual, self._paper, self._orientation, self._preset, self._rows,
-            self._cols, self._margin, self._gap, self._fit, self._fill, self._auto_rotate, self._cut_lines,
+            self._auto, self._manual, self._fill_sheets, self._paper, self._orientation, self._preset,
+            self._rows, self._cols, self._margin, self._gap, self._fit, self._fill, self._auto_rotate,
+            self._cut_lines,
         )  # fmt: skip
         with _signals_blocked(*widgets):
             manual = project.mode is LayoutMode.MANUAL
             self._manual.setChecked(manual)
             self._auto.setChecked(not manual)
+            self._fill_sheets.setChecked(project.fill_sheets)
+            self._fill_sheets.setEnabled(not manual)  # manual sheets are arranged by hand
             self._paper.setCurrentIndex(self._paper.findData(page.paper))
             self._orientation.setCurrentIndex(self._orientation.findData(page.orientation.value))
             preset = next(

@@ -4,7 +4,9 @@ Desktop app for Linux that prints photos several to a sheet — full page, 2 × 
 rows × columns grid — or exports the same layout as a PDF.
 
 - **Automatic** arrangement: photos fill the cells in list order, adding sheets as needed.
-  Drag photos in the list to reorder; drag one cell onto another to swap them.
+  Drag photos in the list to reorder; drag one cell onto another to swap them. Right-click a
+  photo → *Fill a whole sheet* to give it its own sheet with every cell filled (handy for ID
+  photos), or tick *Each photo fills a whole sheet* to do that for every photo.
 - **Manual** arrangement: drag photos from the list (or from the file manager) onto cells,
   drag between cells to swap, right-click a cell to rotate, clear, or fill the empty cells
   with the same photo.

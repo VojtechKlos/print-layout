@@ -1,13 +1,19 @@
 import pytest
 from PySide6.QtCore import QMimeData, QPointF, Qt, QUrl
 from PySide6.QtGui import QColor, QDropEvent, QImage
+from PySide6.QtWidgets import QMenu
 
 from printlayout.document import Document
 from printlayout.imagecache import ImageCache
 from printlayout.model import LayoutMode
 from printlayout.ui.photo_list import PhotoList
 from printlayout.ui.settings_panel import PRESETS, SettingsPanel
-from printlayout.ui.sheet_view import CELL_MIME, PHOTO_MIME, SheetView
+from printlayout.ui.sheet_view import (
+    CELL_MIME,
+    PHOTO_MIME,
+    SheetView,
+    add_fill_sheet_action,
+)
 
 
 @pytest.fixture
@@ -123,3 +129,38 @@ def test_settings_panel_controls_document(qtbot, doc):
 
     doc.set_mode(LayoutMode.MANUAL)
     assert panel._manual.isChecked()
+
+
+def test_settings_fill_sheets_switch(qtbot, doc):
+    panel = SettingsPanel(doc)
+    qtbot.addWidget(panel)
+    panel._fill_sheets.setChecked(True)
+    assert doc.project.fill_sheets
+    assert all(len(set(sheet)) == 1 for sheet in doc.project.sheets)
+    doc.set_mode(LayoutMode.MANUAL)
+    assert not panel._fill_sheets.isEnabled()
+
+
+def test_fill_sheet_menu_action(qtbot, doc):
+    photo = doc.project.photos[0]
+    menu = QMenu()
+    add_fill_sheet_action(menu, doc, [photo.id])
+    action = menu.actions()[0]
+    assert action.isEnabled() and not action.isChecked()
+    action.trigger()
+    assert photo.fill_sheet
+    assert doc.project.sheets[0] == [photo.id] * 4
+
+    doc.set_fill_sheets(True)
+    menu = QMenu()
+    add_fill_sheet_action(menu, doc, [doc.project.photos[1].id])
+    action = menu.actions()[0]
+    assert not action.isEnabled() and action.isChecked()
+
+
+def test_photo_list_marks_whole_sheet_photos(qtbot, doc):
+    widget = PhotoList(doc)
+    qtbot.addWidget(widget)
+    doc.set_photo_fill_sheet([doc.project.photos[0].id], True)
+    assert widget.item(0).text().endswith("Sheet 1 · whole sheet")
+    assert "whole sheet" not in widget.item(1).text()

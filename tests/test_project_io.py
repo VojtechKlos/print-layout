@@ -29,7 +29,8 @@ def project(tmp_path):
         fit_default=FitMode.FIT,
         auto_rotate=False,
         cut_lines=True,
-        photos=[Photo(str(a), id="a", rotation=90, fit=FitMode.FILL), Photo(str(b), id="b")],
+        fill_sheets=True,
+        photos=[Photo(str(a), id="a", rotation=90, fit=FitMode.FILL, fill_sheet=True), Photo(str(b), id="b")],
         sheets=[[None, "a"], ["b", "a"]],
     )
 
@@ -87,3 +88,15 @@ def test_rejects_damaged_file(tmp_path):
     path.write_text("{not json")
     with pytest.raises(project_io.ProjectError):
         project_io.load(str(path))
+
+
+def test_files_without_fill_sheet_settings_still_load(tmp_path, project):
+    path = tmp_path / "old.plproj"
+    data = project_io.to_dict(project, str(path))
+    del data["fill_sheets"]
+    for photo in data["photos"]:
+        del photo["fill_sheet"]
+    path.write_text(json.dumps(data))
+    loaded = project_io.load(str(path))
+    assert not loaded.fill_sheets
+    assert not any(photo.fill_sheet for photo in loaded.photos)

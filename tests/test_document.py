@@ -117,3 +117,52 @@ def test_dirty_flag_and_save(doc, tmp_path):
     assert not doc.dirty
     doc.set_cut_lines(True)
     assert doc.dirty
+
+
+def test_fill_sheet_per_photo_stays_in_auto_mode(doc):
+    first = ids(doc)[0]
+    doc.set_photo_fill_sheet([first], True)
+    assert doc.project.mode is LayoutMode.AUTO
+    # Own sheet for the first photo; the other five flow onto two more sheets.
+    assert doc.project.sheets[0] == [first] * 4
+    assert doc.project.sheets[1:] == [ids(doc)[1:5], [ids(doc)[5], None, None, None]]
+
+
+def test_global_fill_sheets_with_one_photo(qapp):
+    document = Document()
+    document.add_photos(["/photos/id.jpg"])
+    document.set_fill_sheets(True)
+    assert document.project.sheets == [[ids(document)[0]] * 4]
+
+
+def test_global_fill_sheets_gives_every_photo_a_sheet(doc):
+    doc.set_fill_sheets(True)
+    assert doc.project.sheets == [[pid] * 4 for pid in ids(doc)]
+    doc.add_photos(["/photos/new.jpg"])
+    assert doc.project.sheets[-1] == [ids(doc)[-1]] * 4
+
+
+def test_fill_sheets_kept_when_switching_to_manual(doc):
+    doc.set_fill_sheets(True)
+    before = [list(s) for s in doc.project.sheets]
+    doc.set_mode(LayoutMode.MANUAL)
+    assert doc.project.sheets == before
+    assert not doc.auto_layout_differs()
+
+
+def test_move_cell_in_auto_mode_with_a_filled_sheet(doc):
+    first = ids(doc)[0]
+    doc.set_photo_fill_sheet([first], True)
+    a, b = ids(doc)[1:3]
+    doc.move_cell(1, 0, 1)  # sheet 2 holds the flowing photos
+    assert doc.project.sheets[1][:2] == [b, a]
+    before = ids(doc)
+    doc.move_cell(0, 0, 1)  # inside the filled sheet: same photo, nothing to do
+    assert ids(doc) == before
+
+
+def test_duplicate_keeps_fill_sheet(doc):
+    first = ids(doc)[0]
+    doc.set_photo_fill_sheet([first], True)
+    doc.duplicate_photos([first])
+    assert doc.project.photos[1].fill_sheet

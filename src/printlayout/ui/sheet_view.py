@@ -47,6 +47,21 @@ def add_fit_menu(menu: QMenu, document: Document, photo_ids: list[str], current:
         action.triggered.connect(lambda *_, v=value: document.set_photo_fit(photo_ids, v))
 
 
+def add_fill_sheet_action(menu: QMenu, document: Document, photo_ids: list[str]) -> None:
+    """Automatic mode: checkable "Fill a whole sheet" for the given photos."""
+    project = document.project
+    photos = [p for p in project.photos if p.id in photo_ids]
+    if project.fill_sheets:
+        # The global switch already applies to every photo.
+        action = menu.addAction(menu.tr("Fill a whole sheet (on for all photos)"))
+        action.setEnabled(False)
+    else:
+        action = menu.addAction(menu.tr("Fill a whole sheet"))
+    action.setCheckable(True)
+    action.setChecked(bool(photos) and all(project.fills_sheet(p) for p in photos))
+    action.triggered.connect(lambda checked: document.set_photo_fill_sheet(photo_ids, checked))
+
+
 class SheetView(QWidget):
     def __init__(self, document: Document, cache: ImageCache, parent: QWidget | None = None):
         super().__init__(parent)
@@ -196,11 +211,15 @@ class SheetView(QWidget):
         add_menu_action(menu, self.tr("Rotate right"), lambda: doc.rotate_photos([photo.id], 90), "object-rotate-right")
         add_fit_menu(menu, doc, [photo.id], photo.fit)
         menu.addSeparator()
-        add_menu_action(
-            menu, self.tr("Fill empty cells with this photo"), lambda: doc.fill_empty_cells(sheet, photo.id)
-        )
+        manual = doc.project.mode is LayoutMode.MANUAL
+        if manual:
+            add_menu_action(
+                menu, self.tr("Fill empty cells with this photo"), lambda: doc.fill_empty_cells(sheet, photo.id)
+            )
+        else:
+            add_fill_sheet_action(menu, doc, [photo.id])
         menu.addSeparator()
-        if doc.project.mode is LayoutMode.MANUAL:
+        if manual:
             add_menu_action(menu, self.tr("Clear cell"), lambda: doc.clear_cell(sheet, cell), "edit-clear")
         else:
             add_menu_action(menu, self.tr("Remove photo"), lambda: doc.remove_photos([photo.id]), "list-remove")
