@@ -1,6 +1,6 @@
 [project]
 name = "printlayout"
-version = "0.1.0"
+version = "0.2.0"
 description = "Print photos in grid layouts (1, 2×2, 3×3, …) or export them as PDF"
 readme = "README.md"
 license = "MIT"

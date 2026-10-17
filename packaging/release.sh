@@ -46,7 +46,7 @@ echo "==> Writing release notes"
 {
     echo "## Changes"
     if [[ -n "$PREVIOUS" ]]; then
-        git log --reverse --no-merges --pretty='- %s' "$PREVIOUS..HEAD"
+        git log --reverse --no-merges --invert-grep --grep='^Bump version to ' --pretty='- %s' "$PREVIOUS..HEAD"
     else
         echo "- First release"
     fi

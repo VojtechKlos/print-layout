@@ -32,6 +32,15 @@
   </categories>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.2.0" date="2026-10-17">
+      <description>
+        <ul>
+          <li>Fill a whole sheet with one photo in automatic mode, for chosen photos or all of them</li>
+          <li>Cell formats: aspect ratios, photo print sizes from passport photos to 20 × 25 cm,
+            and playing cards (poker, bridge, Magic, Pokémon, Yu-Gi-Oh!, tarot, mini)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-10-17"/>
   </releases>
 </component>
