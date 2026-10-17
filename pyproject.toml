@@ -1,0 +1,29 @@
+[project]
+name = "printlayout"
+version = "0.1.0"
+description = "Print photos in grid layouts (1, 2×2, 3×3, …) or export them as PDF"
+readme = "README.md"
+authors = [
+    { name = "Vojtech Klos", email = "vojta.klos@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pyside6-essentials>=6.12.0",
+]
+
+[project.scripts]
+printlayout = "printlayout.app:main"
+
+[build-system]
+requires = ["uv_build>=0.12.21,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-qt>=4.5.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+qt_api = "pyside6"
